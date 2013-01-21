@@ -1,8 +1,6 @@
 require 'sinatra'
 require "sinatra/twilio"
 
-require 'logger'
-
 # Home page and reference
 get '/' do
   @title = "Home"
@@ -10,11 +8,10 @@ get '/' do
 end
 
 caller_pins = Hash.new({ '+12139095359' => '161286', '+12069193585' => '170689' })
-logger = Logger.new(STDOUT)
 
 respond "/call" do
   addSay "Welcome caller."
-  logger.debug "Call received from #{params[:From]} with parameters #{params}"
+  puts "Call received from #{params[:From]} with parameters #{params}"
 
   if caller_pins.has_key? params[:From]
     # An authorized user is calling reply with the pins
@@ -29,7 +26,7 @@ respond "/allowed_call" do
 end
 
 respond "/authenticate" do
-  logger.debug "Call received from #{params[:From]} with parameters #{params}"
+  puts "Call received from #{params[:From]} with parameters #{params}"
 
   if caller_pins.has_value? params[:Digits]
     addRedirect "/allowed_call"
