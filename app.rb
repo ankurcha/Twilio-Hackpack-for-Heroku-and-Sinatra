@@ -1,5 +1,5 @@
 require 'sinatra'
-require 'twilio-ruby'
+require "sinatra/twilio"
 
 # A hack around multiple routes in Sinatra
 def get_or_post(path, opts={}, &block)
@@ -14,36 +14,59 @@ get '/' do
 end
 
 # Voice Request URL
-get_or_post '/voice/?' do
-  response = Twilio::TwiML::Response.new do |r|
-    r.Say 'Congratulations! You\'ve successfully deployed ' \
-          'the Twilio HackPack for Heroku and Sinatra!', :voice => 'woman'
+# get '/voice/?' do
+#   response = Twilio::TwiML::Response.new do |r|
+#     r.Gather :timeout => 10, :method =>'POST', :action => 'http://immense-headland-2964.herokuapp.com/voice' do |g|
+#       g.Say 'Please enter your passcode', :voice => 'woman'
+#     end        
+#   end
+#   response.text
+# end
+
+
+# post '/voice/?' do
+#   response = Twilio::TwiML::Response.new do |r|
+#     r.Play 'http://www.dialabc.com/i/cache/dtmfgen/wavpcm8.300/9.wav', :loop => 5
+#   end
+#   response.text
+# end
+
+
+callers = %w[+15551234567]
+pin     = "1234"
+
+respond "/call" do
+  addSay "Welcome caller."
+
+  if callers.include? params[:From]
+    addRedirect "/allowed_call"
+  else
+    addRedirect "/disallowed_call"
   end
-  response.text
 end
 
-# SMS Request URL
-get_or_post '/sms/?' do
-  response = Twilio::TwiML::Response.new do |r|
-    r.Sms 'Congratulations! You\'ve successfully deployed ' \
-          'the Twilio HackPack for Heroku and Sinatra!'
-  end
-  response.text
+respond "/allowed_call" do
+  addPlay "/latest_message.mp3"
 end
 
-# Twilio Client URL
-get_or_post '/client/?' do
-  TWILIO_ACCOUNT_SID = ENV['TWILIO_ACCOUNT_SID'] || TWILIO_ACCOUNT_SID
-  TWILIO_AUTH_TOKEN = ENV['TWILIO_AUTH_TOKEN'] || TWILIO_AUTH_TOKEN
-  TWILIO_APP_SID = ENV['TWILIO_APP_SID'] || TWILIO_APP_SID
-  
-  if !(TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_APP_SID)
-    return "Please run configure.rb before trying to do this!"
+respond "/disallowed_call" do
+  gather = Twilio::Gather.new(:action => "/authenticate")
+  gather.addSay "Please enter your PIN now:"
+  append gather
+
+  addSay "You did not enter a pin. Good bye!"
+  addHangup
+end
+
+respond "/authenticate" do
+  if params[:Digits] == pin
+    addRedirect "/allowed_call"
+  else
+    addRedirect "/disallowed_call"
   end
-  @title = "Twilio Client"
-  capability = Twilio::Util::Capability.new(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-  capability.allow_client_outgoing(TWILIO_APP_SID)
-  capability.allow_client_incoming('twilioRubyHackpack')
-  @token = capability.generate
-  erb :client
+end
+
+get "/latest_message.mp3" do
+  # Assuming we have an ORM...
+  send_file Message.last.path, :stream => true
 end
