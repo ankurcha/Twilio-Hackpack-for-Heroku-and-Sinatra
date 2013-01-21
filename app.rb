@@ -9,7 +9,7 @@ get '/' do
   erb :home
 end
 
-caller_pins = { '+12139095359' => '161286', '+12069193585' => '170689' }
+caller_pins = { '+12139095359' => '161286', '+12069193585' => '170689', '+14242658703' => '16121986'}
 logger = Logger.new(STDOUT)
 logger.level = Logger::DEBUG
 
@@ -29,6 +29,19 @@ respond "/call" do
   end
 end
 
+# SMS Request URL
+respond '/sms/?' do
+  response = Twilio::TwiML::Response.new do |r|
+    if caller_pins.has_key? params[:From]
+      # An authorized user is calling reply with the pins
+      logger.info "Pin given to #{params[:From]}"
+      r.Sms "Your pin is #{caller_pins[params[:From]]}"    
+    else
+      r.Sms 'You are not authorized to use this service.'
+    end    
+  end
+  response.text
+end
 # Sends back play message
 respond "/allowed_call" do  
   addPlay "http://www.dialabc.com/i/cache/dtmfgen/wavpcm8.300/9.wav"
