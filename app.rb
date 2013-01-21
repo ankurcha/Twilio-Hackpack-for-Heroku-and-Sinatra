@@ -13,26 +13,33 @@ caller_pins = { '+12139095359' => '161286', '+12069193585' => '170689' }
 logger = Logger.new(STDOUT)
 logger.level = Logger::DEBUG
 
+# Generic voice call handler, receives calls and replies with pin if one of the owners
+# else redirects to authenticate flow
 respond "/call" do
-  addSay "Welcome caller."
-  logger.debug "Call received from #{params[:From]} with parameters #{params}"
+  logger.debug "Call received from #{params[:From]} with parameters #{params} for pin query"
 
+  addSay "Welcome caller."
+  
   if caller_pins.has_key? params[:From]
     # An authorized user is calling reply with the pins
+    logger.info "Pin given to #{params[:From]}"
     addSay "Your pin is #{caller_pins[params[:From]]}"    
   else
     addRedirect "/authenticate"
   end
 end
 
-respond "/allowed_call" do
+# Sends back play message
+respond "/allowed_call" do  
   addPlay "http://www.dialabc.com/i/cache/dtmfgen/wavpcm8.300/9.wav"
 end
 
+# performs authentication by asking user to key in the pin,
+# it then looks up the pin (if params[:Digits] is set) and redirects to /allowed_call if successful
 respond "/authenticate" do
-  logger.debug "Call received from #{params[:From]} with parameters #{params}"
 
   if caller_pins.has_value? params[:Digits]
+    logger.info "[ACCESS GRANTED] to caller #{params[:From]}"    
     addRedirect "/allowed_call"
   else
     gather = Twilio::Gather.new(:action => "/authenticate")
