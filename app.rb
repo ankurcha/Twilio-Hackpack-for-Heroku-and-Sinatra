@@ -50,7 +50,7 @@ respond '/sms' do
     when 'new'
       new_pin = rand(999999).to_s.center(6, rand(9).to_s)
       DoorPin.new(:phone => params[:From], :pin => new_pin, :owner => params[:From]).save
-      addSms 'New Pin created: #{new_pin}'
+      addSms "New Pin created: #{new_pin}"
       # TODO: add TTL
     else
     addSms 'Unknown request'
