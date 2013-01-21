@@ -32,6 +32,7 @@ end
 
 # SMS Request URL
 respond '/sms' do
+  logger.debug "received sms with #{params}"
   response = Twilio::TwiML::Response.new do |r|
     if caller_pins.has_key? params[:From]
       case params[:Body]
