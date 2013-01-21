@@ -1,5 +1,4 @@
 require 'sinatra'
-require 'twilio-ruby'
 require "sinatra/twilio"
 
 require 'logger'
@@ -32,25 +31,23 @@ end
 
 # SMS Request URL
 respond '/sms' do
-  logger.debug "received sms with #{params}"
-  response = Twilio::TwiML::Response.new do |r|
-    if caller_pins.has_key? params[:From]
-      case params[:Body]
-      when 'pin'
-        # An authorized user is calling reply with the pins
-        logger.info "Pin given to #{params[:From]}"
-        r.Sms "Your pin is #{caller_pins[params[:From]]}"    
-      when 'new'
-        r.Sms 'Create a new 24 hr token is not yet implemented.'
-      else
-        r.Sms 'Unknown request'
-      end
+  logger.debug "received sms with #{params}"  
+  if caller_pins.has_key? params[:From]
+    case params[:Body]
+    when 'pin'
+      # An authorized user is calling reply with the pins
+      logger.info "Pin given to #{params[:From]}"
+      addSms "Your pin is #{caller_pins[params[:From]]}"    
+    when 'new'
+      addSms 'Create a new 24 hr token is not yet implemented.'
     else
-      r.Sms 'You are not authorized to make this request.'
+    addSms 'Unknown request'
     end
-  end  
-  response.text
+  else
+    addSms 'You are not authorized to make this request.'
+  end
 end
+
 # Sends back play message
 respond "/allowed_call" do  
   addPlay "http://www.dialabc.com/i/cache/dtmfgen/wavpcm8.300/9.wav"
