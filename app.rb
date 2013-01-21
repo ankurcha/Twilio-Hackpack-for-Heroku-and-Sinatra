@@ -1,13 +1,8 @@
 require 'sinatra'
+require 'twilio-ruby'
 require "sinatra/twilio"
 
 require 'logger'
-
-# A hack around multiple routes in Sinatra
-def get_or_post(path, opts={}, &block)
-  get(path, opts, &block)
-  post(path, opts, &block)
-end
 
 # Home page and reference
 get '/' do
@@ -21,7 +16,7 @@ logger.level = Logger::DEBUG
 
 # Generic voice call handler, receives calls and replies with pin if one of the owners
 # else redirects to authenticate flow
-get_or_post "/call" do
+respond "/call" do
   logger.debug "Call received from #{params[:From]} with parameters #{params} for pin query"
 
   addSay "Welcome caller."
@@ -36,32 +31,33 @@ get_or_post "/call" do
 end
 
 # SMS Request URL
-get_or_post '/sms' do
-  response = Twilio::TwiML::Response.new
-  if caller_pins.has_key? params[:From]
-    case params[:Body]
-    when 'pin'
-      # An authorized user is calling reply with the pins
-      logger.info "Pin given to #{params[:From]}"
-      response.Sms "Your pin is #{caller_pins[params[:From]]}"    
-    when 'new'
-      response.Sms 'Create a new 24 hr token is not yet implemented.'
+respond '/sms' do
+  response = Twilio::TwiML::Response.new do |r|
+    if caller_pins.has_key? params[:From]
+      case params[:Body]
+      when 'pin'
+        # An authorized user is calling reply with the pins
+        logger.info "Pin given to #{params[:From]}"
+        r.Sms "Your pin is #{caller_pins[params[:From]]}"    
+      when 'new'
+        r.Sms 'Create a new 24 hr token is not yet implemented.'
+      else
+        r.Sms 'Unknown request'
+      end
     else
-      response.Sms 'Unknown request'
+      r.Sms 'You are not authorized to make this request.'
     end
-  else
-    response.Sms 'You are not authorized to make this request.'
-  end
+  end  
   response.text
 end
 # Sends back play message
-get_or_post "/allowed_call" do  
+respond "/allowed_call" do  
   addPlay "http://www.dialabc.com/i/cache/dtmfgen/wavpcm8.300/9.wav"
 end
 
 # performs authentication by asking user to key in the pin,
 # it then looks up the pin (if params[:Digits] is set) and redirects to /allowed_call if successful
-get_or_post "/authenticate" do
+respond "/authenticate" do
 
   if caller_pins.has_value? params[:Digits]
     logger.info "[ACCESS GRANTED] to caller #{params[:From]}"    
