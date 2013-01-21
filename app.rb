@@ -30,15 +30,21 @@ respond "/call" do
 end
 
 # SMS Request URL
-respond '/sms/?' do
-  response = Twilio::TwiML::Response.new do |r|
-    if caller_pins.has_key? params[:From]
+respond '/sms' do
+  response = Twilio::TwiML::Response.new
+  if caller_pins.has_key? params[:From]
+    case params[:Body]
+    when 'pin'
       # An authorized user is calling reply with the pins
       logger.info "Pin given to #{params[:From]}"
-      r.Sms "Your pin is #{caller_pins[params[:From]]}"    
+      response.Sms "Your pin is #{caller_pins[params[:From]]}"    
+    when 'new'
+      response.Sms 'Create a new 24 hr token is not yet implemented.'
     else
-      r.Sms 'You are not authorized to use this service.'
-    end    
+      response.Sms 'Unknown request'
+    end
+  else
+    response.Sms 'You are not authorized to make this request.'
   end
   response.text
 end
