@@ -7,7 +7,7 @@ get '/' do
   erb :home
 end
 
-caller_pins = Hash.new{ '+12139095359' => 161286, '+12069193585' => 170689 }
+caller_pins = Hash.new{ '+12139095359' => '161286', '+12069193585' => '170689' }
 
 respond "/call" do
   addSay "Welcome caller."
