@@ -31,7 +31,8 @@ respond "/call" do
   if door_pin
     # An authorized user is calling reply with the pins
     logger.info "Pin given to #{params[:From]}"
-    addSay "Your pin is #{door_pin.pin}"    
+
+    addSay "Your pin is #{door_pin.pin.to_s.split(//).join(",")}"    
   else
     addRedirect "/authenticate"
   end
